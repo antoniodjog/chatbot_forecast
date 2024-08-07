@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+</head>
+<body>
+    <h1>Chatbot</h1>
+    <form id="messageForm">
+        <label for="messageContent">Message:</label>
+        <input type="text" id="messageContent" name="messageContent" required><br>
+        <button type="submit">Send Message</button>
+    </form>
+
+    <h2>Messages</h2>
+    <ul id="messageList"></ul>
+
+    <script>
+        document.getElementById('messageForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const messageContent = document.getElementById('messageContent').value;
+            const accessToken = localStorage.getItem('accessToken');
+
+            const response = await fetch('http://localhost:8000/api/messages/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({
+                    content: messageContent
+                })
+            });
+
+            if (response.ok) {
+                const newMessage = await response.json();
+                addMessageToList(newMessage);
+                document.getElementById('messageContent').value = '';
+            } else {
+                const errorData = await response.json();
+                alert('Error sending message: ' + JSON.stringify(errorData));
+            }
+        });
+
+        async function fetchMessages() {
+            const accessToken = localStorage.getItem('accessToken');
+            
+            const response = await fetch('http://localhost:8000/api/messages/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (response.ok) {
+                const messages = await response.json();
+                messages.forEach(addMessageToList);
+            } else {
+                console.error('Error fetching messages:', await response.json());
+            }
+        }
+
+        function addMessageToList(message) {
+            const messageList = document.getElementById('messageList');
+            const listItem = document.createElement('li');
+            listItem.textContent = `(${message.timestamp}) ${message.user.username}: ${message.content}`;
+            if (message.response) {
+                listItem.textContent += ` - Response: ${message.response}`;
+            }
+            messageList.appendChild(listItem);
+        }
+
+        // Fetch and display messages on page load
+        fetchMessages();
+    </script>
+</body>
+</html>
