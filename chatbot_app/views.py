@@ -4,9 +4,13 @@ from .models import Message
 from .serializers import MessageSerializer
 
 class MessageListCreate(generics.ListCreateAPIView):
-    queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """Return messages for the current user only."""
+        user = self.request.user
+        return Message.objects.filter(user=user)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -20,6 +24,6 @@ class MessageListCreate(generics.ListCreateAPIView):
             return response.json()
     
         output = query({
-        "question": content,
+            "question": content,
         })
         serializer.save(user=user, response=output.get('text'))
